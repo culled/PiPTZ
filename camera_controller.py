@@ -59,7 +59,7 @@ class CameraController:
             return
 
         pan_input = self.adjust_axis(pan_input, self.pan_tilt_response)
-        tilt_input = self.adjust_axis(tilt_input, self.pan_tilt_response)
+        tilt_input = -self.adjust_axis(tilt_input, self.pan_tilt_response)
 
         pan = self.get_speed(pan_input, self.current_camera.pan_tilt_speed)
         tilt = self.get_speed(tilt_input, self.current_camera.pan_tilt_speed)
@@ -98,7 +98,6 @@ class CameraController:
     def stop_moving(self):
         self.pan_tilt_input(0, 0)
         self.zoom_input(0)
-        self.camera_conn.()
 
     @staticmethod
     def adjust_axis(axis: float, response: float) -> float:
