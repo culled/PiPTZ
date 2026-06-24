@@ -1,0 +1,23 @@
+{
+    "pan_tilt_response": 1.5,
+    "invert_pan": false,
+    "invert_tilt": false,
+    "zoom_response_slider": 1.5,
+    "invert_zoom": false,
+    "cameras": [
+        {
+            "name": "Cam 1",
+            "ip": "10.10.1.15",
+            "pan_tilt_speed": 7,
+            "zoom_speed": 2,
+            "is_active": true
+        },
+        {
+            "name": "Cam 2",
+            "ip": "10.10.1.16",
+            "pan_tilt_speed": 3,
+            "zoom_speed": 3,
+            "is_active": false
+        }
+    ]
+}

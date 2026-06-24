@@ -1,0 +1,2 @@
+Quart~=0.20.0
+visca-over-ip~=0.5.1

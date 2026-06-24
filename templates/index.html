@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>Global Settings</h3>
+<div class="row">
+  <div class="col">
+    <label for="panTiltResponseSlider" class="form-label">Pan/Tilt Response</label>
+    <div class="row">
+      <input id="panTiltResponseSlider" class="form-range col" type="range" min="0.5" max="4.0" step="0.1" value="{{ state.pan_tilt_response }}"/>
+      <output id="panTiltResponseSliderValue" class="col" for="panTiltResponseSlider" aria-hidden="true">{{ state.pan_tilt_response }}</output>
+    </div>
+
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" {% if state.invert_pan == true %} checked {% endif %} id="invertPan" oninput="sendGlobalSettingChanged('invert_pan', this.checked)">
+      <label class="form-check-label" for="invertPan">
+        Invert Panning
+      </label>
+    </div>
+
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" {% if state.invert_tilt == true %} checked {% endif %} id="invertTilt" oninput="sendGlobalSettingChanged('invert_tilt', this.checked)">
+      <label class="form-check-label" for="invertTilt">
+        Invert Tilting
+      </label>
+    </div>
+  </div>
+  <div class="col">
+    <label for="zoomResponseSlider" class="form-label">Zoom Response</label>
+    <div class="row">
+      <input id="zoomResponseSlider" class="form-range col" type="range" min="0.5" max="4.0" step="0.1" value="{{ state.zoom_response }}"/>
+      <output id="zoomResponseSliderValue" class="col" for="zoomResponseSlider" aria-hidden="true">{{ state.pan_tilt_response }}</output>
+    </div>
+
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" {% if state.invert_zoom == true %} checked {% endif %} id="invertZoom" oninput="sendGlobalSettingChanged('invert_zoom', this.checked)">
+      <label class="form-check-label" for="invertZoom">
+        Invert Zooming
+      </label>
+    </div>
+  </div>
+</div>
+
+<div class="mt-5">
+  <h3>Add Camera</h3>
+  <form action="/add-camera" method="post">
+    <div class="row">
+      <div class="col-auto">
+        <label for="newCameraNameInput" class="form-label">Camera Name</label>
+        <input id="newCameraNameInput" class="form-control" type="text" name="cameraName" required/>
+      </div>
+
+      <div class="col-auto">
+        <label for="newCameraIPInput" class="form-label">Camera IP Address</label>
+        <input id="newCameraIPInput" class="form-control" type="text" name="cameraIP" required/>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Add Camera</button>
+  </form>
+</div>
+
+<div class="mt-5">
+  <h3>Cameras</h3>
+  <div id="tabContainer" class="row">
+    <ul class="nav nav-tabs" role="tablist">
+      {% for camera in state.cameras %}
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="nav-link-{{ camera.ip }}" data-bs-toggle="tab" data-bs-target="#tab-pane-{{ camera.ip }}" type="button" role="tab" aria-controls="tab-pane-{{ camera.ip }}">{{ camera.name }}{% if camera.is_active %} (Active) {% endif %}</button>
+        </li>
+      {% endfor %}
+    </ul>
+    <div class="tab-content">
+      {% for camera in state.cameras %}
+      <div class="tab-pane fade" id="tab-pane-{{ camera.ip }}" role="tabpanel" aria-labelledby="nav-link-{{ camera.ip }}" tabindex="0">
+        <p>IP Address: {{ camera.ip }} </p>
+
+        <label for="panTiltSpeedSlider-{{ camera.ip }}" class="form-label">Pan/Tilt Speed</label>
+        <div class="row">
+          <input id="panTiltSpeedSlider-{{ camera.ip }}" class="form-range col" type="range" min="1" max="24" value="{{ camera.pan_tilt_speed }}" oninput="panTiltSpeedSliderValueChanged('{{ camera.ip }}', this.value)"/>
+          <output id="panTiltSpeedValue-{{ camera.ip }}" class="col" for="panTiltSpeedSlider-{{ camera.ip }}" aria-hidden="true">{{ camera.pan_tilt_speed }}</output>
+        </div>
+
+        <label for="zoomSpeedSlider-{{ camera.ip }}" class="form-label">Zoom Speed</label>
+        <div class="row">
+          <input id="zoomSpeedSlider-{{ camera.ip }}" class="form-range col" type="range" min="1" max="7" value="{{ camera.zoom_speed }}" oninput="zoomSpeedSliderValueChanged('{{ camera.ip }}', this.value)"/>
+          <output id="zoomSpeedValue-{{ camera.ip }}" class="col" for="zoomSpeedSlider-{{ camera.ip }}" aria-hidden="true">{{ camera.zoom_speed }}</output>
+        </div>
+
+        <form class="mt-5" action="/remove-camera?cameraIP={{ camera.ip }}" method="post">
+          <button class="btn btn-danger" type="submit">Delete</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+window.onload = () => {
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+
+    function sendGlobalSettingChanged(name, value) {
+        const data = {
+            "type": "update",
+            "var": name,
+            "value": value
+        };
+
+        ws.send(JSON.stringify(data));
+    }
+
+    const panTiltResponseSlider = document.getElementById("panTiltResponseSlider");
+
+    panTiltResponseSlider.addEventListener('input', function () {
+        const panTiltResponseSliderValue = document.getElementById("panTiltResponseSliderValue");
+        panTiltResponseSliderValue.textContent = this.value;
+
+        sendGlobalSettingChanged("pan_tilt_response", this.value);
+    });
+
+    const zoomResponseSlider = document.getElementById("zoomResponseSlider");
+
+    zoomResponseSlider.addEventListener('input', function () {
+        const zoomResponseSliderValue = document.getElementById("zoomResponseSliderValue");
+        zoomResponseSliderValue.textContent = this.value;
+
+        sendGlobalSettingChanged("zoom_response", this.value);
+    });
+
+    function sendCameraSettingChanged(cameraIP, name, value) {
+        const data = {
+            "type": "cameraUpdate",
+            "cameraIP": cameraIP,
+            "var": name,
+            "value": value
+        };
+
+        ws.send(JSON.stringify(data));
+    }
+
+    function panTiltSpeedSliderValueChanged(cameraIP, newValue) {
+        const displayElement = document.getElementById(`panTiltSpeedValue-${cameraIP}`);
+        displayElement.textContent = newValue;
+
+        sendCameraSettingChanged(cameraIP, "pan_tilt_speed", newValue);
+    }
+
+    function zoomSpeedSliderValueChanged(cameraIP, newValue) {
+        const displayElement = document.getElementById(`zoomSpeedValue-${cameraIP}`);
+        displayElement.textContent = newValue;
+
+        sendCameraSettingChanged(cameraIP, "zoom_speed", newValue);
+    }
+
+    const cameraTabsContainer = document.getElementById("tabContainer");
+
+    function createTabContent(tab, camera) {
+        const heading = document.createElement("h2");
+        heading.textContent = camera['name'];
+
+        tab.appendChild(heading);
+
+        const ip = document.createElement("p");
+        ip.textContent = `IP Address: ${camera['ip']}`;
+
+        tab.appendChild(ip);
+
+        const deleteForm = document.createElement("form");
+        deleteForm.action = `/remove-camera?cameraIP=${camera['ip']}`;
+        deleteForm.method = "post";
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "btn btn-danger";
+        deleteButton.type = "submit";
+        deleteButton.textContent = "Delete";
+
+        deleteForm.appendChild(deleteButton);
+
+        tab.appendChild(deleteForm);
+    }
+
+    function createCamerasTabs(cameras) {
+        // Clear the tabs
+        while (cameraTabsContainer.hasChildNodes()) {
+            cameraTabsContainer.removeChild(cameraTabsContainer.firstChild);
+        }
+
+        const tabBar = document.createElement("ul");
+        tabBar.className = "nav nav-tabs";
+        tabBar.role = "tablist";
+
+        cameras.forEach(c => {
+            const tab = document.createElement("li");
+            tab.className = "nav-item";
+            tab.role = "presentation";
+
+            const tabButton = document.createElement("button");
+            tabButton.className = "nav-link";
+            tabButton.type = "button";
+            tabButton.role = "tab";
+            tabButton.setAttribute("data-bs-toggle", "tab");
+
+            const paneName = `${c['ip']}-pane`;
+            tabButton.setAttribute("aria-controls", paneName);
+            tabButton.setAttribute("data-bs-target", `#${paneName}`);
+            tabButton.id = c['ip'];
+            tabButton.textContent = c['name'];
+
+            tab.appendChild(tabButton);
+            tabBar.appendChild(tab);
+        });
+
+        cameraTabsContainer.appendChild(tabBar);
+
+        const tabs = document.createElement("div");
+        tabs.className = "tab-content";
+
+        cameras.forEach(c => {
+            const paneName = `${c['ip']}-pane`;
+
+            const tab = document.createElement("div");
+            tab.className = "tab-pane fade";
+            tab.id = paneName;
+            tab.role = "tabpanel";
+            tab.setAttribute("aria-labelledby", c['ip']);
+            tab.tabindex = "0";
+
+            createTabContent(tab, c);
+
+            tabs.appendChild(tab);
+        });
+
+        cameraTabsContainer.appendChild(tabs);
+    }
+
+    function setFromState(newState) {
+        panTiltResponseSlider.value = newState['pan_tilt_response'];
+        const panTiltResponseSliderValue = document.getElementById("panTiltResponseSliderValue");
+        panTiltResponseSliderValue.textContent = panTiltResponseSlider.value;
+
+        const invertPanElement = document.getElementById('invertPan');
+        invertPanElement.checked = newState['invert_pan'];
+
+        const invertTiltElement = document.getElementById('invertTilt');
+        invertTiltElement.checked = newState['invert_tilt'];
+
+        zoomResponseSlider.value = newState['zoom_response'];
+        const zoomResponseSliderValue = document.getElementById("zoomResponseSliderValue");
+        zoomResponseSliderValue.textContent = zoomResponseSlider.value;
+
+        const invertZoomElement = document.getElementById('invertZoom');
+        invertZoomElement.checked = newState['invert_zoom'];
+
+        newState.cameras.forEach(c => {
+            const tab = document.getElementById(`nav-link-${c.ip}`);
+            if (!tab) return;
+
+            tab.textContent = `${c.name}${c.is_active ? ' (Active)' : ''}`;
+
+            const panTiltSpeedSliderElement = document.getElementById(`panTiltSpeedSlider-${c.ip}`);
+            panTiltSpeedSliderElement.value = c.pan_tilt_speed;
+
+            const panTiltSpeedDisplayElement = document.getElementById(`panTiltSpeedValue-${c.ip}`);
+            panTiltSpeedDisplayElement.textContent = c.pan_tilt_speed;
+
+            const zoomSpeedSliderElement = document.getElementById(`zoomSpeedSlider-${c.ip}`);
+            zoomSpeedSliderElement.value = c.zoom_speed;
+
+            const zoomSpeedDisplayElement = document.getElementById(`zoomSpeedValue-${c.ip}`);
+            zoomSpeedDisplayElement.textContent = c.zoom_speed;
+        });
+    }
+
+    ws.addEventListener('message', function (event) {
+        //console.log(event.data);
+        const jsonData = JSON.parse(event.data);
+        if ("type" in jsonData) {
+            switch (jsonData["type"]) {
+                case "state":
+                    setFromState(jsonData);
+                    break;
+            }
+        } else {
+            console.error("Invalid message received");
+        }
+    });
+};
+</script>
+{% endblock %}
