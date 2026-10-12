@@ -112,6 +112,7 @@ class ControlApp:
             self.camera_controller.pan_tilt_input(pan_input, tilt_input)
 
             zoom_input = self.controller.get_axis(ControllerAxis.RIGHT_TRIGGER) - self.controller.get_axis(ControllerAxis.LEFT_TRIGGER)
+            zoom_input -= self.controller.get_axis(ControllerAxis.LEFT_STICK_Y)
             self.camera_controller.zoom_input(zoom_input)
 
         return state_changed

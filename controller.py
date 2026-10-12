@@ -2,7 +2,6 @@ import os
 import threading
 from enum import Enum
 from typing import List
-import time
 
 from ThirdParty.Gamepad.Gamepad import Gamepad, available, gamepad
 
@@ -147,6 +146,9 @@ class Controller:
 
         axis_index = self.axis_mapping[axis]
         axis_value = self.current_gamepad.axis(axis_index)
+
+        if axis == ControllerAxis.LEFT_TRIGGER or axis == ControllerAxis.RIGHT_TRIGGER:
+            axis_value = axis_value * 0.5 + 0.5
 
         return axis_value
 

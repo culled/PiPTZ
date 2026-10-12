@@ -16,6 +16,7 @@ A `start.sh` script is included which can be used to auto-start PiPTZ if it's lo
 - Moving the right joystick pans and tilts the active camera
 - Left trigger zooms the camera out
 - Right trigger zooms the camera in
+- Left stick also can zoom the camera in or out
 - Left and right bumpers switch to the previous or next camera
 - D-pad left and right decrease and increase the pan/tilt speed of the active camera
 - D-pad down and up decrease and increase the zoom speed of the active camera
