@@ -23,16 +23,22 @@ class ControlApp:
             if not self.controller.is_connected():
                 gamepads = Controller.get_available_gamepads()
                 if len(gamepads) > 0:
-                    self.controller.connect_to_gamepad(gamepads[-1])
+                    gamepad_index = gamepads[-1]
+                    self.controller.connect_to_gamepad(gamepad_index)
                     if not self.controller.is_connected():
+                        self.state_changed_callback(self.get_state())
                         continue
+                    else:
+                        self.state_changed_callback(self.get_state())
                 else:
                     time.sleep(0.5)
+                    self.state_changed_callback(self.get_state())
                     continue
 
             # Early out if we lost gamepad connection
             if not self.controller.is_connected():
                 print(f"Lost connection to gamepad")
+                self.state_changed_callback(self.get_state())
                 self.camera_controller.stop_moving()
                 continue
 
@@ -172,6 +178,7 @@ class ControlApp:
                     'ip': c.ip,
                     'pan_tilt_speed': c.pan_tilt_speed,
                     'zoom_speed': c.zoom_speed,
+                    'last_status': c.last_status,
                     'is_active': c == self.camera_controller.current_camera
                 }
 
@@ -184,8 +191,13 @@ class ControlApp:
                 'invert_tilt': self.camera_controller.invert_tilt,
                 'zoom_response': self.camera_controller.zoom_response,
                 'invert_zoom': self.camera_controller.invert_zoom,
+                'gamepad_status': self.controller.gamepad_status,
                 'cameras': cameras
             }
+
+    def set_status(self, status: str):
+        with self.lock:
+            self.last_status = status
 
     def set_global_settings(self, pan_tilt_response: float | None = None, invert_pan: bool | None = None, invert_tilt: bool | None = None, zoom_response: float | None = None, invert_zoom: bool | None = None):
         with self.lock:

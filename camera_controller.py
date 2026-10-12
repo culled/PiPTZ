@@ -45,9 +45,13 @@ class CameraController:
         try:
             self.camera_conn = Camera(camera.ip)
             self.current_camera = camera
+            camera.last_status = "Connected"
+            camera.connection_made = True
             print(f"Switched to camera {camera.ip}")
         except Exception as ex:
             print(f"Error connecting to camera {camera.ip}: {ex}")
+            camera.last_status = f"{ex}"
+            camera.connection_made = False
             self.camera_conn = None
             self.current_camera = None
             return False

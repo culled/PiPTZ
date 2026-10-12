@@ -1,9 +1,10 @@
 import os
 import threading
+import time
 from enum import Enum
 from typing import List
 
-from ThirdParty.Gamepad.Gamepad import Gamepad, available, gamepad
+from ThirdParty.Gamepad.Gamepad import Gamepad, available
 
 
 class ControllerAxis(Enum):
@@ -55,11 +56,14 @@ class Controller:
                         self.controller.dpad_was_pressed_map[ControllerButton.DPAD_DOWN] = False
 
                 except Exception as ex:
-                    print(f"Error updating gamepad state: {ex}")
+                    self.controller.set_status(f"Error updating gamepad state: {ex}")
+                    time.sleep(0.1)
+
 
     def __init__(self):
         self.current_gamepad: Gamepad | None = None
         self.gamepad_index = -1
+        self.gamepad_status = "Gamepad disconnected"
 
         self.dpad_was_pressed_map = {
             ControllerButton.DPAD_LEFT: False,
@@ -108,7 +112,7 @@ class Controller:
 
     def connect_to_gamepad(self, gamepad_index: int):
         if not available(gamepad_index):
-            print(f"Gamepad index {gamepad_index} is invalid")
+            self.set_status(f"Gamepad index {gamepad_index} is invalid")
             return False
 
         self.disconnect()
@@ -130,15 +134,22 @@ class Controller:
             self.update_thread = Controller.UpdateThread(self)
             self.update_thread.start()
 
-            print(f"Connected to gamepad {gamepad_index}")
+            self.set_status(f"Connected to gamepad {gamepad_index}")
             return True
         except Exception as ex:
             self.current_gamepad = None
-            print(f"Failed to connect to gamepad {gamepad_index}: {ex}")
+            self.set_status(f"Failed to connect to gamepad {gamepad_index}: {ex}")
             return False
 
     def is_connected(self):
-        return self.current_gamepad is not None and self.current_gamepad.isConnected()
+        if self.current_gamepad is None:
+            return False
+
+        if self.current_gamepad.isConnected():
+            return True
+
+        self.disconnect()
+        return False
 
     def get_axis(self, axis: ControllerAxis):
         if not self.is_connected():
@@ -174,10 +185,18 @@ class Controller:
         button_index = self.button_mapping[button]
         return self.current_gamepad.beenPressed(button_index)
 
+    def set_status(self, status: str):
+        print(status)
+        self.gamepad_status = status
+
     def disconnect(self):
         if self.update_thread:
             self.update_thread.is_running = False
             self.update_thread.join()
+            self.update_thread = None
 
         if self.current_gamepad:
             self.current_gamepad.disconnect()
+            self.current_gamepad = None
+
+        self.set_status("Gamepad disconnected")

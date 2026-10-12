@@ -4,3 +4,5 @@ class CameraSettings:
         self.ip = ip
         self.pan_tilt_speed = 5
         self.zoom_speed = 4
+        self.last_status = ''
+        self.connection_made = False

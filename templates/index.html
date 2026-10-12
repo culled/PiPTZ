@@ -40,6 +40,12 @@
   </div>
 </div>
 
+<div class="row">
+  <div class="col">
+    <p id="gamepadStatus">{{ state.gamepad_status }}</p>
+  </div>
+</div>
+
 <div class="mt-5">
   <h3>Add Camera</h3>
   <form action="/add-camera" method="post">
@@ -73,6 +79,7 @@
       {% for camera in state.cameras %}
       <div class="tab-pane fade" id="tab-pane-{{ camera.ip }}" role="tabpanel" aria-labelledby="nav-link-{{ camera.ip }}" tabindex="0">
         <p>IP Address: {{ camera.ip }} </p>
+        <p id="cameraStatus-{{ camera.ip }}">Last status: {{ camera.last_status}}</p>
 
         <label for="panTiltSpeedSlider-{{ camera.ip }}" class="form-label">Pan/Tilt Speed</label>
         <div class="row">
@@ -251,11 +258,17 @@ window.onload = () => {
         const invertZoomElement = document.getElementById('invertZoom');
         invertZoomElement.checked = newState['invert_zoom'];
 
+        const gamepadStatusElement = document.getElementById('gamepadStatus');
+        gamepadStatusElement.textContent = newState['gamepad_status'];
+
         newState.cameras.forEach(c => {
             const tab = document.getElementById(`nav-link-${c.ip}`);
             if (!tab) return;
 
             tab.textContent = `${c.name}${c.is_active ? ' (Active)' : ''}`;
+
+            const cameraStatusElement = document.getElementById(`cameraStatus-${c.ip}`);
+            cameraStatusElement.textContent = `Last status: ${c.last_status}`;
 
             const panTiltSpeedSliderElement = document.getElementById(`panTiltSpeedSlider-${c.ip}`);
             panTiltSpeedSliderElement.value = c.pan_tilt_speed;
